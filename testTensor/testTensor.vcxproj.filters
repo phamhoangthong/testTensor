@@ -30,12 +30,18 @@
     <ClInclude Include="Tensor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="MyFile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="testTensor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MyFile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
