@@ -18,7 +18,7 @@ public:
 	Tensor(size_t dim_x, size_t dim_y, size_t dim_z);
 	virtual ~Tensor();
 
-	Tensor<T> operator=(const Tensor<T> &obj);
+	Tensor<T> operator=(Tensor<T> &obj);
 
 	void setSize(size_t dim_x, size_t dim_y, size_t dim_z);
 	void resize(size_t dim_x, size_t dim_y, size_t dim_z);
@@ -27,6 +27,7 @@ public:
 	size_t getDimY();
 	size_t getDimZ();
 	size_t getTotalSize();
+	size_t getIndex(size_t x, size_t y, size_t z);
 
 	void getSize(size_t &dim_x, size_t &dim_y, size_t &dim_z);
 	T* getData();
@@ -39,6 +40,7 @@ public:
 	void setValueData(size_t index, T data);
 	void setData(T* data);
 	void setDataXY(size_t z, T* data);
+	void clear();
 };
 
 template<typename T> Tensor<T>::Tensor() {
@@ -67,10 +69,9 @@ template<typename T> Tensor<T>::~Tensor() {
 	}
 }
 
-template<typename T> Tensor<T> Tensor<T>::operator=(const Tensor<T> &obj) {
-	Tensor<T> m_return;
-	m_return.setSize(obj.getDimX(), obj.getDimY, obj.getDimZ);
-	memcpy(m_return.getData, obj.getData, obj.getTotalSize() * sizeof(T));
+template<typename T> Tensor<T> Tensor<T>::operator=(Tensor<T> &obj) {
+	Tensor<T> m_return(obj.getDimX(), obj.getDimY(), obj.getDimZ());
+	memcpy(m_return.getData(), obj.getData(), obj.getTotalSize() * sizeof(T));
 	return m_return;
 }
 
@@ -113,13 +114,17 @@ template<typename T> void Tensor<T>::getSize(size_t &dim_x, size_t &dim_y, size_
 	dim_z = this->dim_z;
 }
 
+template<typename T> size_t Tensor<T>::getIndex(size_t x, size_t y, size_t z) {
+	return z*step_z + y*step_y + x;
+}
+
 template<typename T> T* Tensor<T>::getData() {
 	return m_data;
 }
 
 template<typename T> T Tensor<T>::getValueData(size_t x, size_t y, size_t z) {
 	if ((x < dim_x) && (y < dim_y) && (z < dim_z)) {
-		size_t index = z*step_z + y*step_y + x;
+		size_t index = getIndex(x, y, z);
 		return m_data[index];
 	}
 	else {
@@ -140,7 +145,7 @@ template<typename T> T Tensor<T>::getValueData(size_t index) {
 
 template<typename T> void Tensor<T>::setValueData(size_t x, size_t y, size_t z, T data) {
 	if ((x < dim_x) && (y < dim_y) && (z < dim_z)) {
-		size_t index = z*step_z + y*step_y + x;
+		size_t index = getIndex(x, y, z);
 		m_data[index] = data;
 	}
 }
@@ -169,4 +174,9 @@ template<typename T> T* Tensor<T>::getDataXY(size_t z) {
 	else {
 		return nullptr;
 	}
+}
+
+template<typename T> void Tensor<T>::clear() {
+	size_t index = 0;
+	memset(m_data, 0, size * sizeof(T));
 }
