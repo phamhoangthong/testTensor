@@ -86,6 +86,14 @@ public:
 		return dim_z;
 	}
 
+	size_t getStepY() {
+		return step_y;
+	}
+
+	size_t getStepZ() {
+		return step_z;
+	}
+
 	size_t getTotalSize() {
 		return size;
 	}
@@ -205,6 +213,45 @@ public:
 		return mReturn;
 	}
 
+	Tensor<T> conv(Tensor<T> &obj) {
+		size_t dim_conv_x, dim_conv_y, dim_conv_z, dim_output_x, dim_output_y, dim_output_z;
+		dim_conv_x = obj.getDimX();
+		dim_conv_y = obj.getDimY();
+		dim_conv_z = obj.getDimZ();
+		if (dim_conv > dim_z) {
+			return Tensor<T>();
+		}
+		dim_output_x = dim_x - dim_conv_x + 1;
+		dim_output_y = dim_y - dim_conv_y + 1;
+		dim_output_z = dim_z - dim_conv_z + 1;
+		Tensor<T> output(dim_output_x, dim_output_y, dim_output_z);
+		T *p_data_obj = obj.getData();
+		T *p_data_output = output.getData();
+		size_t index_output = 0;
+		for (size_t index_ouput_z = 0; index_output_z < dim_output_z; index_ouput_z++) {
+			for (size_t index_ouput_y = 0; index_output_y < dim_output_y; index_ouput_y++) {
+				for (size_t index_ouput_x = 0; index_output_x < dim_output_x; index_ouput_x++) {
+					T tValue = 0;
+					size_t index_conv = 0;
+					size_t index;
+					for (size_t index_obj_z = 0; index_obj_z < dim_conv_z; index_obj_z++) {
+						for (size_t index_obj_y = 0; index_obj_y < dim_conv_y; index_obj_y++) {
+							index = index_ouput_x + (index_ouput_y + index_obj_y)*step_y + (index_ouput_z + index_obj_z)*step_z;
+							for (size_t index_obj_x = 0; index_obj_x < dim_conv_x; index_obj_x++) {
+								tValue += p_data_output[index]*p_data_obj[index_conv];
+								index_conv++;
+								index++;
+							}
+						}
+					}
+					p_data_obj[index_output] = tValue;
+					index_output++;
+				}
+			}
+		}
+		return output;
+	}
+
 	Tensor<T> convolution(Tensor<T> &obj) {
 		size_t dim_conv_x, dim_conv_y, dim_conv_z, dim_output_x, dim_output_y, dim_output_z;
 		dim_conv_x = obj.getDimX();
@@ -312,4 +359,57 @@ public:
 		return output;
 	}
 
+	int updateRelu(Tensor<T> &obj, Tensor<bool> &mask) {
+		size_t dim_obj_x, dim_obj_y, dim_obj_z;
+		obj.getSize(dim_obj_x, dim_obj_y, dim_obj_z);
+		size_t dim_mask_x, dim_mask_y, dim_mask_z;
+		mask.getSize(dim_mask_x, dim_mask_y, dim_mask_z);
+		if ((dim_obj_x != dim_mask_x) || (dim_obj_y != dim_mask_y) || (dim_obj_z != dim_mask_z)) {
+			return -1;
+		}
+		if ((dim_obj_x != dim_x) || (dim_obj_y != dim_y) || (dim_obj_z != dim_z)) {
+			return -1;
+		}
+		size_t limit = size;
+		T *p_data_obj = obj.getData();
+		bool *p_mask_obj = mask.getData();
+		for (size_t i = 0; i < limit; i++) {
+			if (p_mask_obj[i]) {
+				m_data[i] = p_data_obj[i];
+			}
+			else {
+				m_data[i] = 0;
+			}
+		}
+		return 0;
+	}
+
+	int updatePoolMax(Tensor<T> &obj, Tensor<size_t> &pos, size_t sizeWindow) {
+		size_t dim_obj_x, dim_obj_y, dim_obj_z;
+		obj.getSize(dim_obj_x, dim_obj_y, dim_obj_z);
+		size_t dim_pos_x, dim_pos_y, dim_pos_z;
+		pos.getSize(dim_pos_x, dim_pos_y, dim_pos_z);
+		if ((dim_obj_x != dim_pos_x) || (dim_obj_y != dim_pos_y) || (dim_obj_z != dim_pos_z)) {
+			return -1;
+		}
+		if ((dim_x != dim_obj_x*sizeWindow) || (dim_y != dim_obj_y*sizeWindow) || (dim_z != dim_obj_z*sizeWindow)) {
+			return -1;
+		}
+		size_t limit = obj.getTotalSize();
+		T *p_data_obj = obj.getData();
+		size_t *p_data_pos = pos.getData();
+		clear();
+		for (size_t i = 0; i < limit; i++) {
+			m_data[p_data_pos[i]] = p_data_obj[i];
+		}
+		return 0;
+	}
+
+	int updateConv(Tensor<T> &obj, Tensor<T> &parameter) {
+		size_t dim_obj_x, dim_obj_y, dim_obj_z;
+		obj.getSize(dim_obj_x, dim_obj_y, dim_obj_z);
+		size_t dim_parameter_x, dim_parameter_y, dim_parameter_z;
+		parameter.getSize(dim_parameter_x, dim_parameter_y, dim_parameter_z);
+		return 0;
+	}
 };
