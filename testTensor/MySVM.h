@@ -39,7 +39,7 @@ public:
 	}
 
 	MySVM<T> operator=(MySVM<T> &obj) {
-		return MySVM<T> mReturn(obj.getData(), obj.getSize());
+		return MySVM<T>(obj.getData(), obj.getSize());
 	}
 
 	size_t getSize() {
