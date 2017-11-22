@@ -16,6 +16,7 @@ private:
 public:
 	Tensor();
 	Tensor(size_t dim_x, size_t dim_y, size_t dim_z);
+	Tensor(T* data, size_t dim_x, size_t dim_y, size_t dim_z);
 	virtual ~Tensor();
 
 	Tensor<T> operator=(Tensor<T> &obj);
@@ -59,6 +60,17 @@ template<typename T> Tensor<T>::Tensor(size_t dim_x, size_t dim_y, size_t dim_z)
 	step_y = dim_x;
 	step_z = dim_x * dim_y;
 	size = dim_x * dim_y * dim_z;
+}
+
+template<typename T> Tensor<T>::Tensor(T* data, size_t dim_x, size_t dim_y, size_t dim_z) {
+	this->dim_x = dim_x;
+	this->dim_y = dim_y;
+	this->dim_z = dim_z;
+	m_data = new T[this->dim_x*this->dim_y*this->dim_z];
+	step_y = dim_x;
+	step_z = dim_x * dim_y;
+	size = dim_x * dim_y * dim_z;
+	memcpy(m_data, data, size * sizeof(T));
 }
 
 template<typename T> Tensor<T>::~Tensor() {
