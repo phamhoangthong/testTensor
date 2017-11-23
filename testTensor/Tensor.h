@@ -213,6 +213,46 @@ public:
 		return mReturn;
 	}
 
+	int operator+= (Tensor<T> &obj) {
+		if ((dim_x != obj.getDimX()) || (dim_y != obj.getDimY()) || (dim_z != obj.getDimZ())) {
+			return -1;
+		}
+		T* p_data_obj = obj.getData();
+		for (size_t i = 0; i < size; i++) {
+			m_data[i] += p_data_obj[i];
+		}
+		return 0;
+	}
+
+	int operator-= (Tensor<T> &obj) {
+		if ((dim_x != obj.getDimX()) || (dim_y != obj.getDimY()) || (dim_z != obj.getDimZ())) {
+			return -1;
+		}
+		T* p_data_obj = obj.getData();
+		for (size_t i = 0; i < size; i++) {
+			m_data[i] -= p_data_obj[i];
+		}
+		return 0;
+	}
+
+	int operator*= (T &obj) {
+		Tensor<T> mReturn = Tensor<T>(dim_x, dim_y, dim_z);
+		T* p_data_return = mReturn.getData();
+		for (size_t i = 0; i < size; i++) {
+			m_data[i] *= obj;
+		}
+		return 0;
+	}
+
+	int operator/= (T &obj) {
+		Tensor<T> mReturn = Tensor<T>(dim_x, dim_y, dim_z);
+		T* p_data_return = mReturn.getData();
+		for (size_t i = 0; i < size; i++) {
+			m_data[i] /= obj;
+		}
+		return 0;
+	}
+
 	Tensor<T> conv(Tensor<T> &obj) {
 		size_t dim_conv_x, dim_conv_y, dim_conv_z, dim_output_x, dim_output_y, dim_output_z;
 		dim_conv_x = obj.getDimX();
@@ -359,6 +399,10 @@ public:
 		return output;
 	}
 
+	/*Tensor<T> fc(Tensor<T> &obj) {
+
+	}*/
+
 	int updateRelu(Tensor<T> &obj, Tensor<bool> &mask) {
 		size_t dim_obj_x, dim_obj_y, dim_obj_z;
 		obj.getSize(dim_obj_x, dim_obj_y, dim_obj_z);
@@ -375,7 +419,7 @@ public:
 		bool *p_mask_obj = mask.getData();
 		for (size_t i = 0; i < limit; i++) {
 			if (p_mask_obj[i]) {
-				m_data[i] = p_data_obj[i];
+				m_data[i] = p_data_obj[i];//update rate learning
 			}
 			else {
 				m_data[i] = 0;
@@ -400,7 +444,7 @@ public:
 		size_t *p_data_pos = pos.getData();
 		clear();
 		for (size_t i = 0; i < limit; i++) {
-			m_data[p_data_pos[i]] = p_data_obj[i];
+			m_data[p_data_pos[i]] = p_data_obj[i]; //update rate learning
 		}
 		return 0;
 	}
@@ -410,6 +454,45 @@ public:
 		obj.getSize(dim_obj_x, dim_obj_y, dim_obj_z);
 		size_t dim_parameter_x, dim_parameter_y, dim_parameter_z;
 		parameter.getSize(dim_parameter_x, dim_parameter_y, dim_parameter_z);
+		if (((dim_x - dim_parameter_x + 1) != dim_obj_x) || ((dim_y - dim_parameter_y + 1) != dim_obj_y) || ((dim_z - dim_parameter_z + 1) != dim_obj_z)) {
+			return -1;
+		}
+		Tensor<T> d_parameter(dim_parameter_x, dim_parameter_y, dim_parameter_z);
+		Tensor<T> d(dim_x, dim_y, dim_z);
+		size_t step_obj_y = obj.getStepY();
+		size_t step_obj_z = obj.getStepZ();
+		size_t step_parameter_y = parameter.getStepY();
+		size_t step_parameter_z = parameter.getStepZ();
+		T *p_data_obj = obj.getData();
+		T *p_data_parameter = parameter.getData();
+		T *p_data_d_parameter = d_parameter.getData();
+		T *p_data_d = d.getData();
+		size_t index_obj = 0;
+		size_t index = 0;
+		size_t index_parameter = 0;
+		d.clear();
+		d_parameter.clear();
+		for (size_t index_obj_z = 0; index_obj_z < dim_obj_z; index_obj_z++) {
+			for (size_t index_obj_y = 0; index_obj_y < dim_obj_y; index_obj_y++) {
+				for (size_t index_obj_x = 0; index_obj_x < dim_obj_y; index_obj_x++) {
+					index_parameter = 0;
+					for (size_t index_parameter_z = 0; index_parameter_z < dim_parameter_z; index_parameter_z++) {
+						for (size_t index_parameter_y = 0; index_parameter_y < dim_parameter_y; index_parameter_y++) {
+							index = index_obj_x + (index_obj_y + index_parameter_y)*step_y + (index_obj_z + index_parameter_z)*step_z;
+							for (size_t index_parameter_x = 0; index_parameter_x < dim_parameter_x; index_parameter_x++) {
+								d[index] += p_data_parameter[index_parameter] * p_data_obj[index_obj]; 
+								d_parameter[index_parameter] += m_data[index] * p_data_obj[index_obj]; // update rate learning
+								index_parameter++;
+								index++;
+							}
+						}
+					}
+					index_obj++;
+				}
+			}
+		}
+		this = d;
+		parameter += d_parameter;
 		return 0;
 	}
 };
