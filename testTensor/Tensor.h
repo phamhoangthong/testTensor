@@ -6,6 +6,13 @@
 #include <string>
 #include <windows.h>
 
+#define		TYPE_SUM		1
+#define		TYPE_SIGMOD		2
+#define		TYPE_TANH		3
+#define		TYPE_CONV		4
+#define		TYPE_RELU		5
+#define		TYPE_POOLMAX	6
+
 template<typename T> class Tensor
 {
 private:
@@ -13,6 +20,7 @@ private:
 	size_t dim_x, dim_y, dim_z;
 	size_t step_y, step_z;
 	size_t size;
+	int type;
 public:
 	Tensor() {
 		this->dim_x = 0;
@@ -399,9 +407,41 @@ public:
 		return output;
 	}
 
-	/*Tensor<T> fc(Tensor<T> &obj) {
-
-	}*/
+	Tensor<T> fc(Tensor<T> &obj, int type) {
+		if ((dim_x != 1) || (dim_y != 1)) {
+			return Tensor<T>();
+		}
+		size_t dim_obj_x, dim_obj_y, dim_obj_z;
+		obj.getSize(dim_obj_x, dim_obj_y, dim_obj_z);
+		if ((dim_obj_z != 1) || (dim_obj_x != dim_z + 1)) {
+			return Tensor<T>();
+		}
+		Tensor<T> mReturn(1, 1, dim_obj_y);
+		size_t index_obj = 0;
+		T* p_data_obj = obj.getData();
+		T* p_data_return = mReturn.getData();
+		for (size_t index_return = 0; index_return < dim_obj_y; index_return++) {
+			T t_value = 0;
+			for (size_t index = 0; index < dim_z; index++) {
+				t_value += m_data[index] * p_data_obj[index_obj];
+				index_obj++;
+			}
+			t_value += p_data_obj[index_obj];
+			index_obj++;
+			if (type == TYPE_SUM) {
+				p_data_return[index_return] = t_value;
+			}
+			else if (type == TYPE_SIGMOD) {
+				p_data_return[index_return] = (T)(1 / (1 + exp((double)(-t_value))));
+			}
+			else if (type == TYPE_TANH) {
+				T temp_1 = (T)(exp((double)(t_value)));
+				T temp_2 = (T)(exp((double)(-t_value)));
+				p_data_return[index_return] = (temp_1 - temp_2) / (temp_1 + temp_2);
+			}
+		}
+		return mReturn;
+	}
 
 	int updateRelu(Tensor<T> &obj, Tensor<bool> &mask) {
 		size_t dim_obj_x, dim_obj_y, dim_obj_z;
@@ -494,5 +534,19 @@ public:
 		this = d;
 		parameter += d_parameter;
 		return 0;
+	}
+
+	int updateFc(Tensor<T> &obj, Tensor<T> &parameter, int type) {
+		if ((dim_x != 1) || (dim_y != 1)) {
+			return -1;
+		}
+		size_t dim_obj_x, dim_obj_y, dim_obj_z;
+		obj.getSize(dim_obj_x, dim_obj_y, dim_obj_z);
+		if ((dim_obj_x != 1) || (dim_obj_y != 1)) {
+			return -1;
+		}
+		size_t dim_parameter_x, dim_parameter_y, dim_parameter_z;
+		parameter.getSize(dim_parameter_x, dim_parameter_y, dim_parameter_z);
+		
 	}
 };
