@@ -12,7 +12,7 @@
 #define		TYPE_CONV		4
 #define		TYPE_RELU		5
 #define		TYPE_POOLMAX	6
-
+#define		TYPE_FC			7
 template<typename T> class Tensor
 {
 private:
@@ -260,7 +260,7 @@ public:
 		}
 		return 0;
 	}
-
+	// new
 	Tensor<T> conv(Tensor<T> &obj) {
 		size_t dim_conv_x, dim_conv_y, dim_conv_z, dim_output_x, dim_output_y, dim_output_z;
 		dim_conv_x = obj.getDimX();
@@ -299,7 +299,7 @@ public:
 		}
 		return output;
 	}
-
+	// old
 	Tensor<T> convolution(Tensor<T> &obj) {
 		size_t dim_conv_x, dim_conv_y, dim_conv_z, dim_output_x, dim_output_y, dim_output_z;
 		dim_conv_x = obj.getDimX();
@@ -413,14 +413,14 @@ public:
 		}
 		size_t dim_obj_x, dim_obj_y, dim_obj_z;
 		obj.getSize(dim_obj_x, dim_obj_y, dim_obj_z);
-		if ((dim_obj_z != 1) || (dim_obj_x != dim_z + 1)) {
+		if ((dim_obj_y != 1) || (dim_obj_x != dim_z + 1)) {
 			return Tensor<T>();
 		}
-		Tensor<T> mReturn(1, 1, dim_obj_y);
+		Tensor<T> mReturn(1, 1, dim_obj_z);
 		size_t index_obj = 0;
 		T* p_data_obj = obj.getData();
 		T* p_data_return = mReturn.getData();
-		for (size_t index_return = 0; index_return < dim_obj_y; index_return++) {
+		for (size_t index_return = 0; index_return < dim_obj_z; index_return++) {
 			T t_value = 0;
 			for (size_t index = 0; index < dim_z; index++) {
 				t_value += m_data[index] * p_data_obj[index_obj];
@@ -547,6 +547,44 @@ public:
 		}
 		size_t dim_parameter_x, dim_parameter_y, dim_parameter_z;
 		parameter.getSize(dim_parameter_x, dim_parameter_y, dim_parameter_z);
-		
+		if (dim_parameter_y != 1) {
+			return -1;
+		}
+		if (dim_obj_z != dim_parmeter_z) {
+			return -1;
+		}
+		if (dim_parameter_x != dim_z + 1) {
+			return -1;
+		}
+		Tensor<T> d(dim_x, dim_y, dim_z);
+		Tensor<T> d_parameter(dim_parameter_x, dim_parameter_y, dim_parameter_z);
+		d.clear();
+		d_parameter.clear();
+		T *p_data_parameter = parameter.getData();
+		T *p_data_obj = obj.getData();
+		T *p_d = d.getData();
+		size_t index_parameter = 0;
+		for (size_t index_parameter_z = 0; index_parameter_z < dim_parameter_z; index_parameter_z++) {
+			T t_value_obj = p_data_obj[index_parameter_z];
+			if (type == TYPE_SUM) {
+			}
+			else if (type == TYPE_SIGMOD) {
+				t_value_obj = t_value_obj*(1 - t_value_obj);
+			}
+			else if (type == TYPE_TANH) {
+				t_value_obj = 1 - t_value_obj*t_value_obj;
+			}
+
+			for (size_t index_parameter_x = 0; index_parameter_x < dim_parameter_x - 1; index_parameter_x++) {
+				p_d[index_parameter_x] += t_value_obj*p_data_obj[index_parameter];
+				d_parameter[index_parameter] += t_value_obj*m_data[index_parameter_x];
+				index_parameter++;
+			}
+			d_parameter[index_parameter] += t_value_obj;
+			index_parameter++;
+		}
+		this = d;
+		parameter += d_parameter;
+		return 0;
 	}
 };

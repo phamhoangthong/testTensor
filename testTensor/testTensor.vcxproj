@@ -144,6 +144,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Layer.h" />
     <ClInclude Include="MyFile.h" />
     <ClInclude Include="MyMat.h" />
     <ClInclude Include="MySVM.h" />
