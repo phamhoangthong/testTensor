@@ -16,7 +16,7 @@
 template<typename T> class Tensor
 {
 private:
-	T* m_data;
+	T* m_data = nullptr;
 	size_t dim_x, dim_y, dim_z;
 	size_t step_y, step_z;
 	size_t size;
@@ -51,7 +51,7 @@ public:
 		memcpy(m_data, data, size * sizeof(T));
 	}
 	
-	virtual ~Tensor() {
+	~Tensor() {
 		if (m_data != nullptr) {
 			delete[] m_data;
 			m_data = nullptr;
@@ -60,13 +60,14 @@ public:
 	}
 
 	Tensor<T> operator=(Tensor<T> &obj) {
-		Tensor<T> m_return(obj.getDimX(), obj.getDimY(), obj.getDimZ());
+		Tensor<T> m_return;
+		m_return.setSize(obj.getDimX(), obj.getDimY(), obj.getDimZ());
 		memcpy(m_return.getData(), obj.getData(), obj.getTotalSize() * sizeof(T));
 		return m_return;
 	}
 
 	void setSize(size_t dim_x, size_t dim_y, size_t dim_z) {
-		resize(dim_x, dim_y, dim_z)
+		resize(dim_x, dim_y, dim_z);
 	}
 
 	void resize(size_t dim_x, size_t dim_y, size_t dim_z) {
