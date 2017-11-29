@@ -144,6 +144,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ConvLayer.h" />
+    <ClInclude Include="FCLayer.h" />
     <ClInclude Include="Layer.h" />
     <ClInclude Include="MyFile.h" />
     <ClInclude Include="MyMat.h" />

@@ -173,7 +173,6 @@ public:
 	}
 
 	void clear() {
-		size_t index = 0;
 		memset(m_data, 0, size * sizeof(T));
 	}
 
@@ -266,7 +265,7 @@ public:
 		dim_conv_x = obj.getDimX();
 		dim_conv_y = obj.getDimY();
 		dim_conv_z = obj.getDimZ();
-		if (dim_conv > dim_z) {
+		if (dim_conv_z > dim_z) {
 			return Tensor<T>();
 		}
 		dim_output_x = dim_x - dim_conv_x + 1;
@@ -276,15 +275,15 @@ public:
 		T *p_data_obj = obj.getData();
 		T *p_data_output = output.getData();
 		size_t index_output = 0;
-		for (size_t index_ouput_z = 0; index_output_z < dim_output_z; index_ouput_z++) {
-			for (size_t index_ouput_y = 0; index_output_y < dim_output_y; index_ouput_y++) {
-				for (size_t index_ouput_x = 0; index_output_x < dim_output_x; index_ouput_x++) {
+		for (size_t index_output_z = 0; index_output_z < dim_output_z; index_output_z++) {
+			for (size_t index_output_y = 0; index_output_y < dim_output_y; index_output_y++) {
+				for (size_t index_output_x = 0; index_output_x < dim_output_x; index_output_x++) {
 					T tValue = 0;
 					size_t index_conv = 0;
 					size_t index;
 					for (size_t index_obj_z = 0; index_obj_z < dim_conv_z; index_obj_z++) {
 						for (size_t index_obj_y = 0; index_obj_y < dim_conv_y; index_obj_y++) {
-							index = index_ouput_x + (index_ouput_y + index_obj_y)*step_y + (index_ouput_z + index_obj_z)*step_z;
+							index = index_output_x + (index_output_y + index_obj_y)*step_y + (index_output_z + index_obj_z)*step_z;
 							for (size_t index_obj_x = 0; index_obj_x < dim_conv_x; index_obj_x++) {
 								tValue += p_data_output[index]*p_data_obj[index_conv];
 								index_conv++;
@@ -344,7 +343,7 @@ public:
 
 	Tensor<T> relu(Tensor<bool> &mask_input) {
 		Tensor<T> output = Tensor<T>(dim_x, dim_y, dim_z);
-		mask_input = Tensor<bool>(dim_input_x, dim_input_y, dim_input_z);
+		mask_input = Tensor<bool>(dim_x, dim_y, dim_z);
 		double *p_data_output;
 		bool *p_data_mask_input;
 		p_data_mask_input = mask_input.getData();
@@ -390,16 +389,16 @@ public:
 					for (size_t h = 0; h < sizeWindow; h++) {
 						index = k*sizeWindow + (j*sizeWindow + h)*step_y + i*step_z;
 						for (size_t g = 0; g < sizeWindow; g++) {
-							double temp = data_input[index_input];
+							double temp = m_data[index];
 							if (temp > value_max) {
 								value_max = temp;
-								index_max = index_input;
+								index_max = index;
 							}
 							index++;
 						}
 					}
 					data_output[index_output] = value_max;
-					data_d_input[index_output] = index_max;
+					data_d_pos[index_output] = index_max;
 					index_output++;
 				}
 			}
@@ -489,7 +488,7 @@ public:
 		return 0;
 	}
 
-	int updateConv(Tensor<T> &obj, Tensor<T> &parameter) {
+	int updateConv(Tensor<T> &obj, Tensor<T> &parameter, T &rate_learning) {
 		size_t dim_obj_x, dim_obj_y, dim_obj_z;
 		obj.getSize(dim_obj_x, dim_obj_y, dim_obj_z);
 		size_t dim_parameter_x, dim_parameter_y, dim_parameter_z;
@@ -520,8 +519,8 @@ public:
 						for (size_t index_parameter_y = 0; index_parameter_y < dim_parameter_y; index_parameter_y++) {
 							index = index_obj_x + (index_obj_y + index_parameter_y)*step_y + (index_obj_z + index_parameter_z)*step_z;
 							for (size_t index_parameter_x = 0; index_parameter_x < dim_parameter_x; index_parameter_x++) {
-								d[index] += p_data_parameter[index_parameter] * p_data_obj[index_obj]; 
-								d_parameter[index_parameter] += m_data[index] * p_data_obj[index_obj]; // update rate learning
+								p_data_d[index] += p_data_parameter[index_parameter] * p_data_obj[index_obj];
+								p_data_d_parameter[index_parameter] += m_data[index] * p_data_obj[index_obj]; // update rate learning
 								index_parameter++;
 								index++;
 							}
@@ -531,8 +530,8 @@ public:
 				}
 			}
 		}
-		this = d;
-		parameter += d_parameter;
+		*this = d;
+		parameter += d_parameter*rate_learning;
 		return 0;
 	}
 
@@ -550,7 +549,7 @@ public:
 		if (dim_parameter_y != 1) {
 			return -1;
 		}
-		if (dim_obj_z != dim_parmeter_z) {
+		if (dim_obj_z != dim_parameter_z) {
 			return -1;
 		}
 		if (dim_parameter_x != dim_z + 1) {
@@ -563,6 +562,7 @@ public:
 		T *p_data_parameter = parameter.getData();
 		T *p_data_obj = obj.getData();
 		T *p_d = d.getData();
+		T *p_d_parameter = d_parameter.getData();
 		size_t index_parameter = 0;
 		for (size_t index_parameter_z = 0; index_parameter_z < dim_parameter_z; index_parameter_z++) {
 			T t_value_obj = p_data_obj[index_parameter_z];
@@ -577,13 +577,13 @@ public:
 
 			for (size_t index_parameter_x = 0; index_parameter_x < dim_parameter_x - 1; index_parameter_x++) {
 				p_d[index_parameter_x] += t_value_obj*p_data_obj[index_parameter];
-				d_parameter[index_parameter] += t_value_obj*m_data[index_parameter_x];
+				p_d_parameter[index_parameter] += t_value_obj*m_data[index_parameter_x];
 				index_parameter++;
 			}
-			d_parameter[index_parameter] += t_value_obj;
+			p_d_parameter[index_parameter] += t_value_obj;
 			index_parameter++;
 		}
-		this = d;
+		*this = d;
 		parameter += d_parameter;
 		return 0;
 	}

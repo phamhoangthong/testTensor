@@ -130,8 +130,6 @@ public:
 			*output = m_layer.relu(m_mask_relu);
 			return 0;
 		}
-
-
 		return 0;
 	}
 
