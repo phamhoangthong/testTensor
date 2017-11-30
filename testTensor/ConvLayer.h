@@ -30,6 +30,21 @@ public:
 		init(dim_parameter_x, dim_parameter_y, dim_parameter_z, size_parameter, size_window);
 	}
 
+	ConvLayer<T> &operator=(ConvLayer<T> &obj) {
+		this->m_conv = obj.m_conv;
+		this->m_relu = obj.m_relu;
+		this->m_mask_relu = obj.m_mask_relu;
+		this->m_index_poolmax = obj.m_index_poolmax;
+		this->m_size_parameter = obj.m_size_parameter;
+		this->dim_window_poolmax = obj.dim_window_poolmax;
+		this->m_rate_learning = obj.m_rate_learning;
+		p_parameter = new Tensor<T>[m_size_parameter];
+		for (size_t i = 0; i < m_size_parameter; i++) {
+			p_parameter[i] = obj.p_parameter[i];
+		}
+		return *this;
+	}
+
 	void init(size_t dim_parameter_x, size_t dim_parameter_y, size_t dim_parameter_z, size_t size_parameter, size_t size_window) {
 		if (p_parameter != nullptr) {
 			delete[] p_parameter;

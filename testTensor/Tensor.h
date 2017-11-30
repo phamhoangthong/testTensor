@@ -53,17 +53,20 @@ public:
 	
 	~Tensor() {
 		if (m_data != nullptr) {
-			delete[] m_data;
+			//delete[] m_data;
 			m_data = nullptr;
 			size = 0;
 		}
 	}
 
-	Tensor<T> operator=(Tensor<T> &obj) {
-		Tensor<T> m_return;
+	Tensor<T> &operator=(Tensor<T> &obj) {
+		setSize(obj.getDimX(), obj.getDimY(), obj.getDimZ());
+		memcpy(getData(), obj.getData(), obj.getTotalSize() * sizeof(T));
+		return *this;
+		/*Tensor<T> m_return;
 		m_return.setSize(obj.getDimX(), obj.getDimY(), obj.getDimZ());
 		memcpy(m_return.getData(), obj.getData(), obj.getTotalSize() * sizeof(T));
-		return m_return;
+		return m_return;*/
 	}
 
 	void setSize(size_t dim_x, size_t dim_y, size_t dim_z) {
@@ -177,7 +180,7 @@ public:
 		memset(m_data, 0, size * sizeof(T));
 	}
 
-	Tensor<T> operator+ (Tensor<T> &obj) {
+	Tensor<T> &operator+ (Tensor<T> &obj) {
 		if ((dim_x != obj.getDimX()) || (dim_y != obj.getDimY()) || (dim_z != obj.getDimZ())) {
 			return Tensor<T>();
 		}
@@ -190,7 +193,7 @@ public:
 		return mReturn;
 	}
 
-	Tensor<T> operator- (Tensor<T> &obj) {
+	Tensor<T> &operator- (Tensor<T> &obj) {
 		if ((dim_x != obj.getDimX()) || (dim_y != obj.getDimY()) || (dim_z != obj.getDimZ())) {
 			return Tensor<T>();
 		}
@@ -203,7 +206,7 @@ public:
 		return mReturn;
 	}
 
-	Tensor<T> operator* (T &obj) {
+	Tensor<T> &operator* (T &obj) {
 		Tensor<T> mReturn = Tensor<T>(dim_x, dim_y, dim_z);
 		T* p_data_return = mReturn.getData();
 		for (size_t i = 0; i < size; i++) {
@@ -212,7 +215,7 @@ public:
 		return mReturn;
 	}
 
-	Tensor<T> operator/ (T &obj) {
+	Tensor<T> &operator/ (T &obj) {
 		Tensor<T> mReturn = Tensor<T>(dim_x, dim_y, dim_z);
 		T* p_data_return = mReturn.getData();
 		for (size_t i = 0; i < size; i++) {
@@ -221,6 +224,17 @@ public:
 		return mReturn;
 	}
 
+	Tensor<T> &operator+=(Tensor<T> &obj) {
+		if ((dim_x != obj.getDimX()) || (dim_y != obj.getDimY()) || (dim_z != obj.getDimZ())) {
+			return Tensor<T>();
+		}
+		T* p_data_obj = obj.getData();
+		for (size_t i = 0; i < size; i++) {
+			m_data[i] += p_data_obj[i];
+		}
+		return *this;
+	}
+	/*
 	int operator+= (Tensor<T> &obj) {
 		if ((dim_x != obj.getDimX()) || (dim_y != obj.getDimY()) || (dim_z != obj.getDimZ())) {
 			return -1;
@@ -231,7 +245,18 @@ public:
 		}
 		return 0;
 	}
-
+	*/
+	Tensor<T> &operator-= (Tensor<T> &obj) {
+		if ((dim_x != obj.getDimX()) || (dim_y != obj.getDimY()) || (dim_z != obj.getDimZ())) {
+			return Tensor<T>();
+		}
+		T* p_data_obj = obj.getData();
+		for (size_t i = 0; i < size; i++) {
+			m_data[i] -= p_data_obj[i];
+		}
+		return *this;
+	}
+	/*
 	int operator-= (Tensor<T> &obj) {
 		if ((dim_x != obj.getDimX()) || (dim_y != obj.getDimY()) || (dim_z != obj.getDimZ())) {
 			return -1;
@@ -242,7 +267,16 @@ public:
 		}
 		return 0;
 	}
-
+	*/
+	Tensor<T> &operator*= (T &obj) {
+		Tensor<T> mReturn = Tensor<T>(dim_x, dim_y, dim_z);
+		T* p_data_return = mReturn.getData();
+		for (size_t i = 0; i < size; i++) {
+			m_data[i] *= obj;
+		}
+		return *this;
+	}
+	/*
 	int operator*= (T &obj) {
 		Tensor<T> mReturn = Tensor<T>(dim_x, dim_y, dim_z);
 		T* p_data_return = mReturn.getData();
@@ -251,7 +285,16 @@ public:
 		}
 		return 0;
 	}
-
+	*/
+	Tensor<T> &operator/= (T &obj) {
+		Tensor<T> mReturn = Tensor<T>(dim_x, dim_y, dim_z);
+		T* p_data_return = mReturn.getData();
+		for (size_t i = 0; i < size; i++) {
+			m_data[i] /= obj;
+		}
+		return *this;
+	}
+	/*
 	int operator/= (T &obj) {
 		Tensor<T> mReturn = Tensor<T>(dim_x, dim_y, dim_z);
 		T* p_data_return = mReturn.getData();
@@ -260,8 +303,9 @@ public:
 		}
 		return 0;
 	}
+	*/
 	// new
-	Tensor<T> conv(Tensor<T> &obj) {
+	Tensor<T> &conv(Tensor<T> &obj) {
 		size_t dim_conv_x, dim_conv_y, dim_conv_z, dim_output_x, dim_output_y, dim_output_z;
 		dim_conv_x = obj.getDimX();
 		dim_conv_y = obj.getDimY();
@@ -342,7 +386,7 @@ public:
 		return data_return;
 	}
 
-	Tensor<T> relu(Tensor<bool> &mask_input) {
+	Tensor<T> &relu(Tensor<bool> &mask_input) {
 		Tensor<T> output = Tensor<T>(dim_x, dim_y, dim_z);
 		mask_input = Tensor<bool>(dim_x, dim_y, dim_z);
 		double *p_data_output;
@@ -364,7 +408,7 @@ public:
 		return output;
 	}
 
-	Tensor<T> poolMax(Tensor<size_t> &pos, size_t sizeWindow) {
+	Tensor<T> &poolMax(Tensor<size_t> &pos, size_t sizeWindow) {
 		if ((dim_x % sizeWindow == 0) && (dim_y % sizeWindow == 0)) {
 			return Tensor<T>();
 		}
@@ -407,7 +451,7 @@ public:
 		return output;
 	}
 
-	Tensor<T> fc(Tensor<T> &obj, int type) {
+	Tensor<T> &fc(Tensor<T> &obj, int type) {
 		if ((dim_x != 1) || (dim_y != 1)) {
 			return Tensor<T>();
 		}
